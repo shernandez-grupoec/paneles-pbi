@@ -36,20 +36,23 @@ app.get("/", async (req, res) => {
 
     if (result.rows.length === 0) return res.redirect("/logout");
 
+    // Obtenemos los dashboards según la columna panels
     const userPanels = result.rows[0].panels
       .split(",")
-      .map(p => `<div class="panel">${panels[p]}</div>`)
-      .join("");
+      .map(p => panels[p]) // panels es tu objeto con los iframes de cada dashboard
+      .join("<br>");
 
-    const fs = require("fs");
-    let html = fs.readFileSync(__dirname + "/public/dashboards.html", "utf8");
-    html = html.replace("%%DASHBOARDS%%", userPanels);
-
-    res.send(html);
+    res.send(`
+      <div style="width:100vw; height:100vh; margin:0; padding:0;">
+        ${userPanels}
+      </div>
+      <a href="/logout" style="position:fixed; top:10px; right:10px; z-index:999; background:#fff; padding:5px 10px; border-radius:5px;">Cerrar sesión</a>
+    `);
   } else {
     res.sendFile(__dirname + "/public/index.html");
   }
 });
+
 
 // Login
 app.post("/login", async (req, res) => {

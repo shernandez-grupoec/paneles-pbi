@@ -12,37 +12,35 @@ const pool = new Pool({
   }
 });
 
-async function setupDashboards() {
+async function setupUsersPanels() {
   const client = await pool.connect();
-    try {
-    // Crear tabla dashboards
+  try {
+    // Agregar columna panels si no existe
     await client.query(`
-      CREATE TABLE IF NOT EXISTS dashboards (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(50) NOT NULL,
-        embed_url TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS panels VARCHAR(255)
     `);
 
-    console.log("Tabla 'dashboards' creada ✅");
-
-    // Insertar dashboards de ejemplo
+    // Actualizar usuarios con los dashboards que pueden ver
     await client.query(`
-      INSERT INTO dashboards (name, embed_url) VALUES
-        ('ventas', 'https://app.powerbi.com/view?r=eyJrIjoiMGVhZDU3MGQtMWMxZS00N2U1LWI5MzEtNjMyMmU1NGJjMWYzIiwidCI6IjE4ODU0M2M3LWVlNjAtNDE5Zi04M2Q4LTA1OGNlYjlmNjIwMSIsImMiOjR9'),
-        ('rrhh', 'https://app.powerbi.com/view?r=eyJrIjoiNmU5N2QxOTctN2RkYy00ZmRmLWFjMGEtYzY4OWViNDM0NDFkIiwidCI6IjE4ODU0M2M3LWVlNjAtNDE5Zi04M2Q4LTA1OGNlYjlmNjIwMSIsImMiOjR9'),
-        ('finanzas', 'https://app.powerbi.com/view?r=eyJrIjoiNmU5N2QxOTctN2RkYy00ZmRmLWFjMGEtYzY4OWViNDM0NDFkIiwidCI6IjE4ODU0M2M3LWVlNjAtNDE5Zi04M2Q4LTA1OGNlYjlmNjIwMSIsImMiOjR9')
-      ON CONFLICT DO NOTHING
+      UPDATE users
+      SET panels = 'ventas'
+      WHERE username = 'ana'
     `);
 
-    console.log("Dashboards de ejemplo agregados ✅");
+    await client.query(`
+      UPDATE users
+      SET panels = 'rrhh'
+      WHERE username = 'juan'
+    `);
+
+    console.log("Columna panels agregada y usuarios actualizados ✅");
   } catch (err) {
-    console.error("Error creando la tabla o insertando datos:", err);
+    console.error("Error actualizando la tabla users:", err);
   } finally {
     client.release();
     pool.end();
   }
-  }
+}
 
-setupDashboards();
+setupUsersPanels();
