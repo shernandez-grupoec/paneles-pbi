@@ -36,18 +36,17 @@ app.get("/", async (req, res) => {
 
     if (result.rows.length === 0) return res.redirect("/logout");
 
-    // Obtenemos los dashboards según la columna panels
     const userPanels = result.rows[0].panels
       .split(",")
-      .map(p => panels[p]) // panels es tu objeto con los iframes de cada dashboard
+      .map(p => panels[p])
       .join("<br>");
 
-    res.send(`
-      <div style="width:100vw; height:100vh; margin:0; padding:0;">
-        ${userPanels}
-      </div>
-      <a href="/logout" style="position:fixed; top:10px; right:10px; z-index:999; background:#fff; padding:5px 10px; border-radius:5px;">Cerrar sesión</a>
-    `);
+    // Cargar dashboards.html y reemplazar marcador
+    const fs = require("fs");
+    let html = fs.readFileSync(__dirname + "/public/dashboards.html", "utf8");
+    html = html.replace("%%DASHBOARDS%%", userPanels);
+
+    return res.send(html);
   } else {
     res.sendFile(__dirname + "/public/index.html");
   }
@@ -59,10 +58,13 @@ app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   const client = await pool.connect();
   try {
-    const result = await client.query("SELECT * FROM users WHERE username=$1 AND password=$2", [username, password]);
+    const result = await client.query(
+      "SELECT * FROM users WHERE username=$1 AND password=$2",
+      [username, password]
+    );
     if (result.rows.length > 0) {
       req.session.user = username;
-      res.redirect("/");
+      res.redirect("/"); // ✅ Redirige a /, que ahora carga dashboards.html
     } else {
       res.redirect("/?error=1");
     }
@@ -73,6 +75,7 @@ app.post("/login", async (req, res) => {
     client.release();
   }
 });
+
 
 // Logout
 app.get("/logout", (req, res) => {
