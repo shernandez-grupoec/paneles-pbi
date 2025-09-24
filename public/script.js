@@ -1,8 +1,6 @@
-// script.js - Login real con servidor
-
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('loginForm');
-    const usernameInput = document.getElementById('email');
+    const usernameInput = document.getElementById('email'); // coincide con el HTML
     const passwordInput = document.getElementById('password');
     const usernameError = document.getElementById('usernameError');
     const passwordError = document.getElementById('passwordError');
@@ -12,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
         usernameError.textContent = '';
         passwordError.textContent = '';
 
-        // Validación básica antes de enviar
         let valid = true;
 
         if (!usernameInput.value.trim()) {
@@ -26,9 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!valid) {
-            e.preventDefault(); // evita enviar si hay errores
+            e.preventDefault(); // Bloquea envío si hay errores
         }
-        // Si es válido, el formulario se envía normalmente al backend (/login)
-        // No hacemos e.preventDefault() y el server.js maneja la autenticación
+        // Si es válido, el formulario se envía normalmente al servidor (/login)
     });
 });
+
