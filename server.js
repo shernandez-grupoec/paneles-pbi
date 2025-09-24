@@ -1,3 +1,4 @@
+app.use(express.static("public"));
 const express = require("express");
 const bodyParser = require("body-parser");
 const session = require("express-session");
@@ -75,14 +76,7 @@ app.get("/", async (req, res) => {
       <a href="/logout" style="position:fixed; top:10px; right:10px; z-index:999; background:#fff; padding:5px 10px; border-radius:5px;">Cerrar sesión</a>
     `);
   } else {
-    res.send(`
-      <form method="post" action="/login" style="margin:100px auto; width:300px;">
-        <h2>Login</h2>
-        Usuario: <input name="username" style="width:100%; margin-bottom:10px;"><br>
-        Contraseña: <input type="password" name="password" style="width:100%; margin-bottom:10px;"><br>
-        <button type="submit" style="width:100%;">Entrar</button>
-      </form>
-    `);
+    res.sendFile(__dirname + "/public/index.html");
   }
 });
 
@@ -98,11 +92,12 @@ app.post("/login", async (req, res) => {
 
   if (result.rows.length > 0) {
     req.session.user = username;
-    res.redirect("/");
+    res.redirect("/"); // ✅ irá directo al panel
   } else {
-    res.send("Credenciales inválidas. <a href='/'>Volver</a>");
+    res.redirect("/?error=1"); // redirige con error
   }
 });
+
 
 // Logout
 app.get("/logout", (req, res) => {
