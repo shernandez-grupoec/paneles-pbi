@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const session = require("express-session");
 const { Pool } = require("pg");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 
@@ -29,29 +30,43 @@ const pool = new Pool({
 
 // Ruta principal
 app.get("/", async (req, res) => {
-  if (req.session.user) {
-    const client = await pool.connect();
-    const result = await client.query("SELECT * FROM users WHERE username=$1", [req.session.user]);
-    client.release();
+  if (!req.session.user) return res.sendFile(path.join(__dirname, "public/index.html"));
 
-    if (result.rows.length === 0) return res.redirect("/logout");
+  const client = await pool.connect();
+  try {
+    // Obtener paneles asignados al usuario
+    const userResult = await client.query(
+      "SELECT panels FROM users WHERE username=$1",
+      [req.session.user]
+    );
 
-    const userPanels = result.rows[0].panels
-      .split(",")
-      .map(p => panels[p])
+    if (userResult.rows.length === 0) return res.redirect("/logout");
+
+    const panelNames = userResult.rows[0].panels.split(",");
+
+    // Obtener iframes desde la tabla dashboards
+    const dashResult = await client.query(
+      "SELECT name, iframe_url FROM dashboards WHERE name = ANY($1)",
+      [panelNames]
+    );
+
+    const userPanels = dashResult.rows
+      .map(d => `<div class="panel">${d.iframe_url}</div>`)
       .join("<br>");
 
     // Cargar dashboards.html y reemplazar marcador
-    const fs = require("fs");
-    let html = fs.readFileSync(__dirname + "/public/dashboards.html", "utf8");
+    let html = fs.readFileSync(path.join(__dirname, "public/dashboards.html"), "utf8");
     html = html.replace("%%DASHBOARDS%%", userPanels);
 
-    return res.send(html);
-  } else {
-    res.sendFile(__dirname + "/public/index.html");
+    res.send(html);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error cargando dashboards");
+  } finally {
+    client.release();
   }
 });
-
 
 // Login
 app.post("/login", async (req, res) => {
@@ -62,9 +77,10 @@ app.post("/login", async (req, res) => {
       "SELECT * FROM users WHERE username=$1 AND password=$2",
       [username, password]
     );
+
     if (result.rows.length > 0) {
       req.session.user = username;
-      res.redirect("/"); // ✅ Redirige a /, que ahora carga dashboards.html
+      res.redirect("/"); // Redirige a /, que carga dashboards.html
     } else {
       res.redirect("/?error=1");
     }
@@ -76,7 +92,6 @@ app.post("/login", async (req, res) => {
   }
 });
 
-
 // Logout
 app.get("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/"));
@@ -85,4 +100,3 @@ app.get("/logout", (req, res) => {
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
-
