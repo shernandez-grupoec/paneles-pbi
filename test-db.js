@@ -12,39 +12,37 @@ const pool = new Pool({
   }
 });
 
-async function setupDB() {
+async function setupDashboards() {
   const client = await pool.connect();
-
-  try {
-    // Crear tabla si no existe
+    try {
+    // Crear tabla dashboards
     await client.query(`
-      CREATE TABLE IF NOT EXISTS users (
+      CREATE TABLE IF NOT EXISTS dashboards (
         id SERIAL PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        panels VARCHAR(255) NOT NULL
+        name VARCHAR(50) NOT NULL,
+        embed_url TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
       )
     `);
 
-    // Insertar usuarios de prueba (si no existen)
+    console.log("Tabla 'dashboards' creada ✅");
+
+    // Insertar dashboards de ejemplo
     await client.query(`
-      INSERT INTO users (username, password, panels)
-      VALUES 
-        ('ana','1234','ventas'),
-        ('juan','5678','rrhh')
-      ON CONFLICT (username) DO NOTHING
+      INSERT INTO dashboards (name, embed_url) VALUES
+        ('ventas', 'https://app.powerbi.com/view?r=eyJrIjoiMGVhZDU3MGQtMWMxZS00N2U1LWI5MzEtNjMyMmU1NGJjMWYzIiwidCI6IjE4ODU0M2M3LWVlNjAtNDE5Zi04M2Q4LTA1OGNlYjlmNjIwMSIsImMiOjR9'),
+        ('rrhh', 'https://app.powerbi.com/view?r=eyJrIjoiNmU5N2QxOTctN2RkYy00ZmRmLWFjMGEtYzY4OWViNDM0NDFkIiwidCI6IjE4ODU0M2M3LWVlNjAtNDE5Zi04M2Q4LTA1OGNlYjlmNjIwMSIsImMiOjR9'),
+        ('finanzas', 'https://app.powerbi.com/view?r=eyJrIjoiNmU5N2QxOTctN2RkYy00ZmRmLWFjMGEtYzY4OWViNDM0NDFkIiwidCI6IjE4ODU0M2M3LWVlNjAtNDE5Zi04M2Q4LTA1OGNlYjlmNjIwMSIsImMiOjR9')
+      ON CONFLICT DO NOTHING
     `);
 
-    console.log("Base de datos lista y usuarios de prueba agregados ✅");
+    console.log("Dashboards de ejemplo agregados ✅");
   } catch (err) {
-    console.error("Error configurando la DB:", err);
+    console.error("Error creando la tabla o insertando datos:", err);
   } finally {
     client.release();
+    pool.end();
+  }
   }
 
-  // Probar lectura
-  const res = await pool.query("SELECT * FROM users");
-  console.log(res.rows);
-}
-
-setupDB();
+setupDashboards();

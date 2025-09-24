@@ -23,8 +23,8 @@
             <!-- Formulario de login -->
             <form class="login-form" id="loginForm" method="POST" action="/login">
                 <div class="form-group">
-                    <label for="email">Usuario</label>
-                    <input type="text" id="email" name="username" required>
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" name="username" required>
                     <span class="error-message" id="usernameError"></span>
                 </div>
 
@@ -35,6 +35,15 @@
                 </div>
 
                 <button type="submit" class="login-btn">Entrar</button>
+
+                <!-- Mostrar error de login si hay query ?error=1 -->
+                <div id="loginError" style="color:red; margin-top:10px;">
+                    <script>
+                        if (window.location.search.includes('error=1')) {
+                            document.write('Usuario o contraseña incorrectos');
+                        }
+                    </script>
+                </div>
             </form>
 
             <div class="security-notice">
@@ -44,21 +53,7 @@
                 </svg>
                 <span>Tu conexión está segura con encriptación SSL de 256 bits</span>
             </div>
-
-            <div class="success-message" id="successMessage">
-                <div class="success-icon">
-                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                        <circle cx="14" cy="14" r="14" fill="#10B981"/>
-                        <path d="M9 14l3 3 7-7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-                <h3>Bienvenido de nuevo</h3>
-                <p>Redirigiendo a tu panel...</p>
-            </div>
         </div>
     </div>
-
-    <!-- Scripts -->
-    <script src="script.js"></script>
 </body>
 </html>
