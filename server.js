@@ -78,6 +78,8 @@ app.post("/login", async (req, res) => {
       [username, password]
     );
 
+  console.log("Resultado query:", result.rows);
+  
     if (result.rows.length > 0) {
       req.session.user = username;
       res.redirect("/"); // Redirige a /, que carga dashboards.html
