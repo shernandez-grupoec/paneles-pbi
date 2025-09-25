@@ -47,32 +47,40 @@ app.get("/", async (req, res) => {
       [req.session.user]
     );
 
+
     if (userResult.rows.length === 0) {
       return res.redirect("/logout");
     }
 
     const panelName = userResult.rows[0].panels;
 
-    // Obtener el iframe desde la tabla dashboards
-    const dashResult = await client.query(
-      "SELECT embed_url FROM dashboards WHERE name = $1",
-      [panelName]
-    );
+    console.log("Panel del usuario:", panelName);
+    console.log("Resultado dashboards:", dashResult.rows);
 
-    if (dashResult.rows.length === 0) {
-      return res.status(404).send("No se encontró el dashboard asignado.");
-    }
+    /// Obtener el iframe desde la tabla dashboards
+  const dashResult = await client.query(
+  "SELECT url FROM dashboards WHERE name = $1",
+  [panelName]
+);
 
-    const embedUrl = dashResult.rows[0].embed_url;
+if (dashResult.rows.length === 0) {
+  return res.status(404).send("No se encontró el dashboard asignado.");
+}
 
-    // Cargar dashboards.html y reemplazar marcador
-    let html = fs.readFileSync(path.join(__dirname, "public/dashboards.html"), "utf8");
-    html = html.replace(
-      "%%DASHBOARDS%%",
-      `<iframe src="${embedUrl}" width="100%" height="100%" frameborder="0" allowFullScreen="true"></iframe>`
-    );
+console.log("Panel del usuario:", panelName);
+console.log("Resultado dashboards:", dashResult.rows);
 
-    res.send(html);
+const embedUrl = dashResult.rows[0].url;
+
+// Cargar dashboards.html y reemplazar marcador
+let html = fs.readFileSync(path.join(__dirname, "public/dashboards.html"), "utf8");
+html = html.replace(
+  "%%DASHBOARDS%%",
+  `<iframe src="${embedUrl}" width="100%" height="100%" frameborder="0" allowFullScreen="true"></iframe>`
+);
+
+res.send(html);
+
 
   } catch (err) {
     console.error("Error cargando dashboard:", err);
