@@ -39,6 +39,33 @@ app.use((req, res, next) => {
   next();
 });
 
+
+// Login
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      "SELECT * FROM users WHERE username=$1 AND password=$2",
+      [username, password]
+    );
+
+    if (result.rows.length > 0) {
+      req.session.user = username;
+      console.log("✅ Sesión creada:", req.session.user);
+      return res.redirect("/");
+    }
+
+    res.redirect("/?error=1");
+
+  } catch (err) {
+    console.error("Error en login:", err);
+    res.status(500).send("Error en login");
+  } finally {
+    client.release();
+  }
+});
+
 // Ruta principal
 app.get("/", async (req, res) => {
   if (!req.session.user) {
@@ -88,31 +115,6 @@ app.get("/", async (req, res) => {
   }
 });
 
-// Login
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const client = await pool.connect();
-  try {
-    const result = await client.query(
-      "SELECT * FROM users WHERE username=$1 AND password=$2",
-      [username, password]
-    );
-
-    if (result.rows.length > 0) {
-      req.session.user = username;
-      console.log("✅ Sesión creada:", req.session.user);
-      return res.redirect("/");
-    }
-
-    res.redirect("/?error=1");
-
-  } catch (err) {
-    console.error("Error en login:", err);
-    res.status(500).send("Error en login");
-  } finally {
-    client.release();
-  }
-});
 
 // Logout
 app.get("/logout", (req, res) => {
