@@ -20,10 +20,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-  secure: false, // ⚠️ solo para probar
-  httpOnly: true,
-  sameSite: "lax"
-}
+    secure: process.env.NODE_ENV === "production", // ✅ solo en producción
+    httpOnly: true,
+    sameSite: "lax"
+  }
 }));
 
 // 🔎 Middleware global para debug de sesión
@@ -42,11 +42,45 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// Ruta principal (home/dashboard)
-app.get("/", async (req, res) => {
+// Ruta de login (siempre muestra el formulario)
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/index.html"));
+});
+
+// Procesar login
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      "SELECT * FROM users WHERE username=$1 AND password=$2",
+      [username, password]
+    );
+
+    console.log("Resultado query login:", result.rows);
+
+    if (result.rows.length > 0) {
+      req.session.user = username;
+      console.log("✅ Sesión creada para usuario:", req.session.user, "| SessionID:", req.sessionID);
+      return res.redirect("/dashboard"); // 👈 ahora redirige aquí
+    }
+
+    console.log("❌ Login fallido para usuario:", username);
+    res.redirect("/?error=1");
+
+  } catch (err) {
+    console.error("💥 Error en login:", err);
+    res.status(500).send("Error en login");
+  } finally {
+    client.release();
+  }
+});
+
+// Ruta de dashboards (protegida)
+app.get("/dashboard", async (req, res) => {
   if (!req.session.user) {
-    console.log("⚠️ No hay sesión, mostrando login");
-    return res.sendFile(path.join(__dirname, "public/index.html"));
+    console.log("⚠️ Intento de acceso sin sesión, redirigiendo a login");
+    return res.redirect("/");
   }
 
   const client = await pool.connect();
@@ -95,35 +129,6 @@ app.get("/", async (req, res) => {
   }
 });
 
-// Login
-app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
-  const client = await pool.connect();
-  try {
-    const result = await client.query(
-      "SELECT * FROM users WHERE username=$1 AND password=$2",
-      [username, password]
-    );
-
-    console.log("Resultado query login:", result.rows);
-
-    if (result.rows.length > 0) {
-      req.session.user = username;
-      console.log("✅ Sesión creada para usuario:", req.session.user, "| SessionID:", req.sessionID);
-      return res.redirect("/");
-    }
-
-    console.log("❌ Login fallido para usuario:", username);
-    res.redirect("/?error=1");
-
-  } catch (err) {
-    console.error("💥 Error en login:", err);
-    res.status(500).send("Error en login");
-  } finally {
-    client.release();
-  }
-});
-
 // Logout
 app.get("/logout", (req, res) => {
   console.log("🚪 Cerrando sesión:", req.sessionID);
@@ -133,5 +138,6 @@ app.get("/logout", (req, res) => {
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`));
+
 
 
