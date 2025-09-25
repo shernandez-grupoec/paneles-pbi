@@ -46,7 +46,7 @@ app.get("/", async (req, res) => {
 
     // Obtener iframes desde la tabla dashboards
     const dashResult = await client.query(
-      "SELECT name, iframe_url FROM dashboards WHERE name = ANY($1)",
+      "SELECT name, embed_url FROM dashboards WHERE name = ANY($1)",
       [panelNames]
     );
 
