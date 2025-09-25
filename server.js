@@ -7,28 +7,23 @@ const fs = require("fs");
 
 const app = express();
 
-// Archivos estáticos
+// Archivos estáticos (carpeta public)
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Configuración de sesión
 app.use(session({
-  secret: "miSecretoPowerBI",
+  secret: process.env.SESSION_SECRET || "miSecretoPowerBI",
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === "production", // usa HTTPS en producción
+    secure: true, // ✅ Render usa HTTPS
+    httpOnly: true,
     sameSite: "lax"
   }
 }));
 
-// 🔎 Middleware global de logging
-app.use((req, res, next) => {
-  console.log("➡️ Nueva petición:", req.method, req.url, "| Sesión:", req.session.user || "ninguna");
-  next();
-});
-
-// Configuración PostgreSQL con SSL
+// Configuración PostgreSQL con SSL (Render)
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT || 5432,
@@ -36,6 +31,12 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   ssl: { rejectUnauthorized: false }
+});
+
+// 🔎 Middleware de logging (para depurar en Render)
+app.use((req, res, next) => {
+  console.log("➡️ Nueva petición:", req.method, req.url, "| Sesión:", req.session.user || "ninguna");
+  next();
 });
 
 // Ruta principal
@@ -58,7 +59,7 @@ app.get("/", async (req, res) => {
 
     const panelName = userResult.rows[0].panels;
 
-    // Obtener el iframe desde la tabla dashboards
+    // Buscar el dashboard correspondiente
     const dashResult = await client.query(
       "SELECT embed_url FROM dashboards WHERE name = $1",
       [panelName]
@@ -67,9 +68,6 @@ app.get("/", async (req, res) => {
     if (dashResult.rows.length === 0) {
       return res.status(404).send("No se encontró el dashboard asignado.");
     }
-
-    console.log("Panel del usuario:", panelName);
-    console.log("Resultado dashboards:", dashResult.rows);
 
     const embedUrl = dashResult.rows[0].embed_url;
 
@@ -100,12 +98,10 @@ app.post("/login", async (req, res) => {
       [username, password]
     );
 
-    console.log("Resultado query:", result.rows);
-
     if (result.rows.length > 0) {
       req.session.user = username;
       console.log("✅ Sesión creada:", req.session.user);
-      return res.redirect("/"); // Redirige al dashboard del usuario
+      return res.redirect("/");
     }
 
     res.redirect("/?error=1");
@@ -125,5 +121,5 @@ app.get("/logout", (req, res) => {
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`));
 
