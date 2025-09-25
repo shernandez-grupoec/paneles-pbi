@@ -22,6 +22,12 @@ app.use(session({
   }
 }));
 
+// 🔎 Middleware global de logging
+app.use((req, res, next) => {
+  console.log("➡️ Nueva petición:", req.method, req.url, "| Sesión:", req.session.user || "ninguna");
+  next();
+});
+
 // Configuración PostgreSQL con SSL
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -32,48 +38,42 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// Ruta principal (dashboard)
+// Ruta principal
 app.get("/", async (req, res) => {
   if (!req.session.user) {
-    console.log("No hay sesión, cargando index.html");
     return res.sendFile(path.join(__dirname, "public/index.html"));
   }
 
-  console.log("Sesión detectada:", req.session.user);
-
   const client = await pool.connect();
   try {
-    console.log("Consultando usuario:", req.session.user);
-
+    // Obtener el panel asignado al usuario
     const userResult = await client.query(
       "SELECT panels FROM users WHERE username=$1",
       [req.session.user]
     );
 
-    console.log("Resultado userResult:", userResult.rows);
-
     if (userResult.rows.length === 0) {
-      console.log("Usuario no encontrado, cerrando sesión.");
       return res.redirect("/logout");
     }
 
     const panelName = userResult.rows[0].panels;
-    console.log("Panel del usuario:", panelName);
 
+    // Obtener el iframe desde la tabla dashboards
     const dashResult = await client.query(
       "SELECT embed_url FROM dashboards WHERE name = $1",
       [panelName]
     );
 
-    console.log("Resultado dashboards:", dashResult.rows);
-
     if (dashResult.rows.length === 0) {
-      console.log("No hay dashboard en DB para:", panelName);
       return res.status(404).send("No se encontró el dashboard asignado.");
     }
 
+    console.log("Panel del usuario:", panelName);
+    console.log("Resultado dashboards:", dashResult.rows);
+
     const embedUrl = dashResult.rows[0].embed_url;
 
+    // Cargar dashboards.html y reemplazar marcador
     let html = fs.readFileSync(path.join(__dirname, "public/dashboards.html"), "utf8");
     html = html.replace(
       "%%DASHBOARDS%%",
@@ -90,11 +90,9 @@ app.get("/", async (req, res) => {
   }
 });
 
-
-// 🚨 Ruta de login que faltaba
+// Login
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-
   const client = await pool.connect();
   try {
     const result = await client.query(
@@ -102,10 +100,12 @@ app.post("/login", async (req, res) => {
       [username, password]
     );
 
+    console.log("Resultado query:", result.rows);
+
     if (result.rows.length > 0) {
       req.session.user = username;
-      console.log("Sesión creada:", req.session.user);
-      return res.redirect("/");
+      console.log("✅ Sesión creada:", req.session.user);
+      return res.redirect("/"); // Redirige al dashboard del usuario
     }
 
     res.redirect("/?error=1");
