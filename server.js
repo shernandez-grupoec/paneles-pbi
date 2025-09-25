@@ -20,10 +20,10 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === "production", // ✅ solo en producción
-    httpOnly: true,
-    sameSite: "lax"
-  }
+  secure: false, // ⚠️ solo para probar
+  httpOnly: true,
+  sameSite: "lax"
+}
 }));
 
 // 🔎 Middleware global para debug de sesión
