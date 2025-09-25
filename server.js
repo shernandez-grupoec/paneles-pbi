@@ -11,14 +11,14 @@ const app = express();
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.set("trust proxy", 1); // 🔑 necesario en Render
+app.set("trust proxy", 1);
 
 app.use(session({
   secret: process.env.SESSION_SECRET || "miSecretoPowerBI",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true,   // ahora sí funcionará en HTTPS
+    secure: process.env.NODE_ENV === "production", // HTTPS en Render
     httpOnly: true,
     sameSite: "lax"
   }
