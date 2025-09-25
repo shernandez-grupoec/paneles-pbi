@@ -11,14 +11,16 @@ const app = express();
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// 🔑 Necesario en Render (HTTPS con proxy)
 app.set("trust proxy", 1);
 
+// Configuración de sesión
 app.use(session({
   secret: process.env.SESSION_SECRET || "miSecretoPowerBI",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === "production", // HTTPS en Render
+    secure: process.env.NODE_ENV === "production", // ✅ solo en producción
     httpOnly: true,
     sameSite: "lax"
   }
@@ -34,15 +36,16 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// 🔎 Middleware de logging (para depurar en Render)
+// 🔎 Middleware de logging global
 app.use((req, res, next) => {
-  console.log("➡️ Nueva petición:", req.method, req.url, "| Sesión:", req.session.user || "ninguna");
+  console.log("➡️ Petición:", req.method, req.url, "| Sesión:", req.session.user || "ninguna");
   next();
 });
 
-// Ruta principal
+// Ruta principal (home/dashboard)
 app.get("/", async (req, res) => {
   if (!req.session.user) {
+    console.log("⚠️ No hay sesión, mostrando login");
     return res.sendFile(path.join(__dirname, "public/index.html"));
   }
 
@@ -55,22 +58,26 @@ app.get("/", async (req, res) => {
     );
 
     if (userResult.rows.length === 0) {
+      console.log("⚠️ Usuario sin panel asignado, cerrando sesión");
       return res.redirect("/logout");
     }
 
     const panelName = userResult.rows[0].panels;
 
-    // Buscar el dashboard correspondiente
+    // Buscar dashboard en tabla
     const dashResult = await client.query(
       "SELECT embed_url FROM dashboards WHERE name = $1",
       [panelName]
     );
 
     if (dashResult.rows.length === 0) {
+      console.log("❌ No se encontró el dashboard:", panelName);
       return res.status(404).send("No se encontró el dashboard asignado.");
     }
 
     const embedUrl = dashResult.rows[0].embed_url;
+
+    console.log("✅ Mostrando dashboard:", panelName, "->", embedUrl);
 
     // Cargar dashboards.html y reemplazar marcador
     let html = fs.readFileSync(path.join(__dirname, "public/dashboards.html"), "utf8");
@@ -82,7 +89,7 @@ app.get("/", async (req, res) => {
     res.send(html);
 
   } catch (err) {
-    console.error("Error cargando dashboard:", err);
+    console.error("💥 Error cargando dashboard:", err);
     res.status(500).send("Error cargando dashboards");
   } finally {
     client.release();
@@ -99,16 +106,19 @@ app.post("/login", async (req, res) => {
       [username, password]
     );
 
+    console.log("Resultado query login:", result.rows);
+
     if (result.rows.length > 0) {
       req.session.user = username;
       console.log("✅ Sesión creada:", req.session.user);
       return res.redirect("/");
     }
 
+    console.log("❌ Login fallido para usuario:", username);
     res.redirect("/?error=1");
 
   } catch (err) {
-    console.error("Error en login:", err);
+    console.error("💥 Error en login:", err);
     res.status(500).send("Error en login");
   } finally {
     client.release();
@@ -117,7 +127,10 @@ app.post("/login", async (req, res) => {
 
 // Logout
 app.get("/logout", (req, res) => {
-  req.session.destroy(() => res.redirect("/"));
+  req.session.destroy(() => {
+    console.log("🚪 Sesión cerrada");
+    res.redirect("/");
+  });
 });
 
 // Iniciar servidor
