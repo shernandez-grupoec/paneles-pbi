@@ -29,12 +29,13 @@ const pool = new Pool({
 });
 
 // Ruta principal
+// Ruta principal
 app.get("/", async (req, res) => {
   if (!req.session.user) return res.sendFile(path.join(__dirname, "public/index.html"));
 
   const client = await pool.connect();
   try {
-    // Obtener paneles asignados al usuario
+    // Obtener el panel asignado al usuario
     const userResult = await client.query(
       "SELECT panels FROM users WHERE username=$1",
       [req.session.user]
@@ -42,21 +43,23 @@ app.get("/", async (req, res) => {
 
     if (userResult.rows.length === 0) return res.redirect("/logout");
 
-    const panelNames = userResult.rows[0].panels.split(",");
+    const panelName = userResult.rows[0].panels;
 
-    // Obtener iframes desde la tabla dashboards
+    // Obtener el iframe desde la tabla dashboards
     const dashResult = await client.query(
-      "SELECT name, embed_url FROM dashboards WHERE name = ANY($1)",
-      [panelNames]
+      "SELECT embed_url FROM dashboards WHERE name = $1",
+      [panelName]
     );
 
-    const userPanels = dashResult.rows
-      .map(d => `<div class="panel">${d.embed_url}</div>`)
-      .join("<br>");
+    if (dashResult.rows.length === 0) {
+      return res.status(404).send("No se encontró el dashboard asignado.");
+    }
+
+    const embedUrl = dashResult.rows[0].embed_url;
 
     // Cargar dashboards.html y reemplazar marcador
     let html = fs.readFileSync(path.join(__dirname, "public/dashboards.html"), "utf8");
-    html = html.replace("%%DASHBOARDS%%", userPanels);
+    html = html.replace("%%DASHBOARDS%%", `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0" allowFullScreen="true"></iframe>`);
 
     res.send(html);
 
@@ -67,6 +70,7 @@ app.get("/", async (req, res) => {
     client.release();
   }
 });
+
 
 // Login
 app.post("/login", async (req, res) => {
@@ -79,7 +83,7 @@ app.post("/login", async (req, res) => {
     );
 
   console.log("Resultado query:", result.rows);
-  
+
     if (result.rows.length > 0) {
       req.session.user = username;
       res.redirect("/"); // Redirige a /, que carga dashboards.html
