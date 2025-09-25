@@ -1,30 +1,88 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Login simple</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecureBank Login</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Iniciar sesión</h1>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <rect width="36" height="36" rx="8" fill="#6366F1"/>
+            <path d="M12 14h12v8H12v-8zm2 2v4h8v-4h-8zm-2-4h12v2H12v-2zm0 12h12v2H12v-2z" fill="white"/>
+          </svg>
+        </div>
+        <h1>SecureBank</h1>
+        <p>Accede a tu cuenta de forma segura</p>
+      </div>
 
-  <form action="/login" method="POST">
-    <label for="username">Usuario:</label>
-    <input type="text" id="username" name="username" required>
-    <br><br>
+      <!-- Formulario de login -->
+      <form class="login-form" id="loginForm" method="POST" action="/login">
+        <div class="form-group">
+          <label for="username">Usuario</label>
+          <input type="text" id="username" name="username" required />
+          <span class="error-message" id="usernameError"></span>
+        </div>
 
-    <label for="password">Contraseña:</label>
-    <input type="password" id="password" name="password" required>
-    <br><br>
+        <div class="form-group">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" required />
+          <span class="error-message" id="passwordError"></span>
+        </div>
 
-    <button type="submit">Entrar</button>
-  </form>
+        <button type="submit" class="login-btn">Entrar</button>
 
-  <div style="color:red; margin-top:10px;">
-    <script>
-      if (window.location.search.includes("error=1")) {
-        document.write("Usuario o contraseña incorrectos");
-      }
-    </script>
+        <!-- Mostrar error si login falla -->
+        <div id="loginError" class="error-global">
+          <script>
+            if (window.location.search.includes("error=1")) {
+              document.write("❌ Usuario o contraseña incorrectos");
+            }
+          </script>
+        </div>
+      </form>
+
+      <div class="security-notice">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 1L3 3v4.5c0 2.89 2 5.5 5 6 3-0.5 5-3.11 5-6V3l-5-2z" stroke="#10B981" stroke-width="1.5" fill="none"/>
+          <path d="M6 8l1.5 1.5L11 6" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Tu conexión está asegurada con encriptación SSL de 256 bits</span>
+      </div>
+    </div>
   </div>
+
+  <!-- Script de validación -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("loginForm");
+      const username = document.getElementById("username");
+      const password = document.getElementById("password");
+      const usernameError = document.getElementById("usernameError");
+      const passwordError = document.getElementById("passwordError");
+
+      form.addEventListener("submit", (e) => {
+        let valid = true;
+        usernameError.textContent = "";
+        passwordError.textContent = "";
+
+        if (!username.value.trim()) {
+          usernameError.textContent = "Usuario requerido";
+          valid = false;
+        }
+
+        if (!password.value.trim()) {
+          passwordError.textContent = "Contraseña requerida";
+          valid = false;
+        }
+
+        if (!valid) e.preventDefault();
+      });
+    });
+  </script>
 </body>
 </html>
