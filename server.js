@@ -22,7 +22,6 @@ app.use(session({
   }
 }));
 
-
 // Configuración PostgreSQL con SSL
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -33,7 +32,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-// Ruta principal
+// Ruta principal (dashboard)
 app.get("/", async (req, res) => {
   if (!req.session.user) {
     return res.sendFile(path.join(__dirname, "public/index.html"));
@@ -85,6 +84,32 @@ app.get("/", async (req, res) => {
   }
 });
 
+// 🚨 Ruta de login que faltaba
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+
+  const client = await pool.connect();
+  try {
+    const result = await client.query(
+      "SELECT * FROM users WHERE username=$1 AND password=$2",
+      [username, password]
+    );
+
+    if (result.rows.length > 0) {
+      req.session.user = username;
+      console.log("Sesión creada:", req.session.user);
+      return res.redirect("/");
+    }
+
+    res.redirect("/?error=1");
+
+  } catch (err) {
+    console.error("Error en login:", err);
+    res.status(500).send("Error en login");
+  } finally {
+    client.release();
+  }
+});
 
 // Logout
 app.get("/logout", (req, res) => {
