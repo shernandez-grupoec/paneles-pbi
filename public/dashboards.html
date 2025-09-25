@@ -3,11 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SecureBank - Dashboards</title>
-  <link rel="stylesheet" href="style.css">
-  <a href="/logout" class="logout-btn">Cerrar sesión</a>
+  <title>Dashboards</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+    }
+
+    /* Botón fijo arriba a la derecha */
+    .logout-btn {
+      position: fixed;
+      top: 15px;
+      right: 20px;
+      background: #10B981;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 14px;
+      z-index: 1000;
+    }
+
+    /* Contenedor del iframe ocupa toda la pantalla */
+    .dashboards-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    .dashboards-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
 </head>
 <body>
+
+  <a href="/logout" class="logout-btn">Cerrar sesión</a>
 
   <div class="dashboards-container">
     %%DASHBOARDS%%
