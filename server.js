@@ -35,39 +35,45 @@ const pool = new Pool({
 // Ruta principal (dashboard)
 app.get("/", async (req, res) => {
   if (!req.session.user) {
+    console.log("No hay sesión, cargando index.html");
     return res.sendFile(path.join(__dirname, "public/index.html"));
   }
 
+  console.log("Sesión detectada:", req.session.user);
+
   const client = await pool.connect();
   try {
-    // Obtener el panel asignado al usuario
+    console.log("Consultando usuario:", req.session.user);
+
     const userResult = await client.query(
       "SELECT panels FROM users WHERE username=$1",
       [req.session.user]
     );
 
+    console.log("Resultado userResult:", userResult.rows);
+
     if (userResult.rows.length === 0) {
+      console.log("Usuario no encontrado, cerrando sesión.");
       return res.redirect("/logout");
     }
 
     const panelName = userResult.rows[0].panels;
+    console.log("Panel del usuario:", panelName);
 
-    // Obtener el iframe desde la tabla dashboards
     const dashResult = await client.query(
       "SELECT embed_url FROM dashboards WHERE name = $1",
       [panelName]
     );
 
+    console.log("Resultado dashboards:", dashResult.rows);
+
     if (dashResult.rows.length === 0) {
+      console.log("No hay dashboard en DB para:", panelName);
       return res.status(404).send("No se encontró el dashboard asignado.");
     }
 
-    console.log("Panel del usuario:", panelName);
-    console.log("Resultado dashboards:", dashResult.rows);
-
     const embedUrl = dashResult.rows[0].embed_url;
 
-    // Cargar dashboards.html y reemplazar marcador
     let html = fs.readFileSync(path.join(__dirname, "public/dashboards.html"), "utf8");
     html = html.replace(
       "%%DASHBOARDS%%",
@@ -83,6 +89,7 @@ app.get("/", async (req, res) => {
     client.release();
   }
 });
+
 
 // 🚨 Ruta de login que faltaba
 app.post("/login", async (req, res) => {
