@@ -29,9 +29,10 @@ const pool = new Pool({
 });
 
 // Ruta principal
-// Ruta principal
 app.get("/", async (req, res) => {
-  if (!req.session.user) return res.sendFile(path.join(__dirname, "public/index.html"));
+  if (!req.session.user) {
+    return res.sendFile(path.join(__dirname, "public/index.html"));
+  }
 
   const client = await pool.connect();
   try {
@@ -41,7 +42,9 @@ app.get("/", async (req, res) => {
       [req.session.user]
     );
 
-    if (userResult.rows.length === 0) return res.redirect("/logout");
+    if (userResult.rows.length === 0) {
+      return res.redirect("/logout");
+    }
 
     const panelName = userResult.rows[0].panels;
 
@@ -59,18 +62,20 @@ app.get("/", async (req, res) => {
 
     // Cargar dashboards.html y reemplazar marcador
     let html = fs.readFileSync(path.join(__dirname, "public/dashboards.html"), "utf8");
-    html = html.replace("%%DASHBOARDS%%", `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0" allowFullScreen="true"></iframe>`);
+    html = html.replace(
+      "%%DASHBOARDS%%",
+      `<iframe src="${embedUrl}" width="100%" height="100%" frameborder="0" allowFullScreen="true"></iframe>`
+    );
 
     res.send(html);
 
   } catch (err) {
-    console.error(err);
+    console.error("Error cargando dashboard:", err);
     res.status(500).send("Error cargando dashboards");
   } finally {
     client.release();
   }
 });
-
 
 // Login
 app.post("/login", async (req, res) => {
@@ -82,16 +87,17 @@ app.post("/login", async (req, res) => {
       [username, password]
     );
 
-  console.log("Resultado query:", result.rows);
+    console.log("Resultado query:", result.rows);
 
     if (result.rows.length > 0) {
       req.session.user = username;
-      res.redirect("/"); // Redirige a /, que carga dashboards.html
-    } else {
-      res.redirect("/?error=1");
+      return res.redirect("/"); // Redirige al dashboard del usuario
     }
+
+    res.redirect("/?error=1");
+
   } catch (err) {
-    console.error(err);
+    console.error("Error en login:", err);
     res.status(500).send("Error en login");
   } finally {
     client.release();
