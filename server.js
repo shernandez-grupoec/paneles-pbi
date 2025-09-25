@@ -15,8 +15,13 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({
   secret: "miSecretoPowerBI",
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: {
+    secure: process.env.NODE_ENV === "production", // usa HTTPS en producción
+    sameSite: "lax"
+  }
 }));
+
 
 // Configuración PostgreSQL con SSL
 const pool = new Pool({
@@ -91,6 +96,7 @@ app.post("/login", async (req, res) => {
 
     if (result.rows.length > 0) {
       req.session.user = username;
+      console.log("Sesión creada:", req.session.user);
       return res.redirect("/"); // Redirige al dashboard del usuario
     }
 
