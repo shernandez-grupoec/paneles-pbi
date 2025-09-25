@@ -11,13 +11,14 @@ const app = express();
 app.use(express.static("public"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Configuración de sesión
+app.set("trust proxy", 1); // 🔑 necesario en Render
+
 app.use(session({
   secret: process.env.SESSION_SECRET || "miSecretoPowerBI",
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: true, // ✅ Render usa HTTPS
+    secure: true,   // ahora sí funcionará en HTTPS
     httpOnly: true,
     sameSite: "lax"
   }
