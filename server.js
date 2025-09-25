@@ -26,6 +26,12 @@ app.use(session({
   }
 }));
 
+// 🔎 Middleware global para debug de sesión
+app.use((req, res, next) => {
+  console.log("➡️ Petición:", req.method, req.url, "| Usuario:", req.session.user || "ninguno", "| SessionID:", req.sessionID);
+  next();
+});
+
 // Configuración PostgreSQL con SSL (Render)
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -34,12 +40,6 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   ssl: { rejectUnauthorized: false }
-});
-
-// 🔎 Middleware de logging global
-app.use((req, res, next) => {
-  console.log("➡️ Petición:", req.method, req.url, "| Sesión:", req.session.user || "ninguna");
-  next();
 });
 
 // Ruta principal (home/dashboard)
@@ -76,7 +76,6 @@ app.get("/", async (req, res) => {
     }
 
     const embedUrl = dashResult.rows[0].embed_url;
-
     console.log("✅ Mostrando dashboard:", panelName, "->", embedUrl);
 
     // Cargar dashboards.html y reemplazar marcador
@@ -110,7 +109,7 @@ app.post("/login", async (req, res) => {
 
     if (result.rows.length > 0) {
       req.session.user = username;
-      console.log("✅ Sesión creada:", req.session.user);
+      console.log("✅ Sesión creada para usuario:", req.session.user, "| SessionID:", req.sessionID);
       return res.redirect("/");
     }
 
@@ -127,13 +126,12 @@ app.post("/login", async (req, res) => {
 
 // Logout
 app.get("/logout", (req, res) => {
-  req.session.destroy(() => {
-    console.log("🚪 Sesión cerrada");
-    res.redirect("/");
-  });
+  console.log("🚪 Cerrando sesión:", req.sessionID);
+  req.session.destroy(() => res.redirect("/"));
 });
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`));
+
 
