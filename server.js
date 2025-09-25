@@ -26,7 +26,7 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   ssl: { rejectUnauthorized: false }
-});
+}));
 
 // Ruta principal
 app.get("/", async (req, res) => {
@@ -51,7 +51,7 @@ app.get("/", async (req, res) => {
     );
 
     const userPanels = dashResult.rows
-      .map(d => `<div class="panel">${d.iframe_url}</div>`)
+      .map(d => `<div class="panel">${d.embed_url}</div>`)
       .join("<br>");
 
     // Cargar dashboards.html y reemplazar marcador
@@ -100,3 +100,4 @@ app.get("/logout", (req, res) => {
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
+
